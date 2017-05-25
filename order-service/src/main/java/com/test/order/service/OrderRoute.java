@@ -34,9 +34,9 @@ public class OrderRoute extends RouteBuilder {
             .apiProperty("api.title", "Order API").apiProperty("api.version", "1.0")
             .apiProperty("cors", "true");
 		
-		 from("direct:consul")
+		/* from("direct:consul")
          	.to("consul:agent?url=http://localhost:8500")
-             .to("log:camel-consul?level=INFO");
+             .to("log:camel-consul?level=INFO");*/
 		 
 		rest("/api/v1")
 		 .get("/order").consumes("application/json").description("Find all orders").outType(Order.class)

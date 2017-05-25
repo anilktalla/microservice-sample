@@ -3,11 +3,9 @@ package com.test.gateway.service;
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.consul.ConsulConfiguration;
-import org.apache.camel.component.consul.ConsulRegistry;
 import org.apache.camel.component.consul.cloud.ConsulServiceDiscovery;
 import org.apache.camel.component.jackson.JacksonDataFormat;
 import org.apache.camel.model.cloud.ServiceCallConfigurationDefinition;
-import org.apache.camel.model.cloud.ServiceCallServiceDiscoveryConfiguration;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,7 +40,6 @@ public class GatewayRoute extends RouteBuilder {
 		 
 		ConsulConfiguration consul =  new ConsulConfiguration(context);
 		consul.setUrl("http://localhost:8500");
-		consul.setKey("order");
 		 ServiceCallConfigurationDefinition config = new ServiceCallConfigurationDefinition();
 		config.setComponent("netty4-http");
 		config.setServiceDiscovery(new ConsulServiceDiscovery(consul));
@@ -53,9 +50,9 @@ public class GatewayRoute extends RouteBuilder {
 		
 		rest("/api/v1")
 		 .get("/order").consumes("application/json").description("Find all orders").outType(Order.class)
-		 	.route().serviceCall().name("order").defaultLoadBalancer().consulServiceDiscovery().endParent().unmarshal(format).endRest()
+		 	.route().serviceCall("order/api/v1/order").unmarshal(format).endRest()
 		 .post("/order").consumes("application/json").description("Add new order").type(Order.class).outType(Order.class)
-			.route().serviceCall("order").unmarshal(format).endRest();
+			.route().serviceCall("order/api/v1/order").unmarshal(format).endRest();
 			
 		
 	}
