@@ -26,6 +26,8 @@ public class GatewayRouteBuilder extends RouteBuilder {
 
 	private static final String SERVICE_DISCOVERY_KEY = "service-discovery-routes";
 	private static final String CONSUL_URL = "http://localhost:8500";
+	private static final String REMOTE_HOST_HEADER = "REMOTE_HOST";
+
 	@Autowired
 	private CamelContext context;
 
@@ -54,11 +56,11 @@ public class GatewayRouteBuilder extends RouteBuilder {
 
 	public String routeDiscovery(Exchange exchange) {
 		String host = getIpAddr(exchange.getIn().getBody(HttpServletRequest.class));
-		
-		if(serviceDiscoveryMap.containsKey(host)){
-			//return 
+
+		if (serviceDiscoveryMap.containsKey(host)) {
+			return "serviceCall:" + serviceDiscoveryMap.get(host);
 		}
-		
+
 		return null;
 	}
 
@@ -76,7 +78,7 @@ public class GatewayRouteBuilder extends RouteBuilder {
 	}
 
 	private static String getIpAddr(HttpServletRequest request) {
-		String ip = request.getHeader("x-forwarded-for");
+		/*String ip = request.getHeader("x-forwarded-for");
 		if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
 			ip = request.getHeader("Proxy-Client-IP");
 		}
@@ -86,7 +88,8 @@ public class GatewayRouteBuilder extends RouteBuilder {
 		if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
 			ip = request.getRemoteAddr();
 		}
-		return ip;
+		return ip;*/
+		return request.getRemoteAddr();
 	}
 
 }
