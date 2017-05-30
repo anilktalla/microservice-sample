@@ -7,3 +7,8 @@ logging:
     org.apache.camel: DEBUG
 
 port: 8088
+
+management:
+  port: 8089
+  security:
+        enabled: false

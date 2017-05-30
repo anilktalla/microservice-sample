@@ -11,7 +11,12 @@ import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.consul.ConsulConfiguration;
 import org.apache.camel.component.consul.cloud.ConsulServiceDiscovery;
+import org.apache.camel.component.jetty9.JettyHttpComponent9;
 import org.apache.camel.model.cloud.ServiceCallConfigurationDefinition;
+import org.apache.camel.util.jsse.KeyManagersParameters;
+import org.apache.camel.util.jsse.KeyStoreParameters;
+import org.apache.camel.util.jsse.SSLContextParameters;
+import org.apache.camel.util.jsse.SSLContextServerParameters;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -20,13 +25,13 @@ import com.google.common.base.Optional;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.orbitz.consul.Consul;
+import com.test.gateway.service.security.CustomTrustManagersParameters;
 
 @Component
 public class GatewayRouteBuilder extends RouteBuilder {
 
 	private static final String SERVICE_DISCOVERY_KEY = "service-discovery-routes";
 	private static final String CONSUL_URL = "http://localhost:8500";
-	private static final String REMOTE_HOST_HEADER = "REMOTE_HOST";
 
 	@Autowired
 	private CamelContext context;
@@ -48,9 +53,12 @@ public class GatewayRouteBuilder extends RouteBuilder {
 		config.setServiceDiscovery(new ConsulServiceDiscovery(consul));
 
 		context.setServiceCallConfiguration(config);
+		
+		configureSSL();
 
-		from("netty4-http:http://0.0.0.0:8080/?matchOnUriPrefix=true")
-				.dynamicRouter(method(GatewayRouteBuilder.class, "routeDiscovery"));
+		from("jetty:https://0.0.0.0:8445/?matchOnUriPrefix=true")
+			.log("-------Success-----");
+				//.dynamicRouter(method(GatewayRouteBuilder.class, "routeDiscovery"));
 
 	}
 
@@ -78,18 +86,34 @@ public class GatewayRouteBuilder extends RouteBuilder {
 	}
 
 	private static String getIpAddr(HttpServletRequest request) {
-		/*String ip = request.getHeader("x-forwarded-for");
-		if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-			ip = request.getHeader("Proxy-Client-IP");
-		}
-		if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-			ip = request.getHeader("WL-Proxy-Client-IP");
-		}
-		if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-			ip = request.getRemoteAddr();
-		}
-		return ip;*/
 		return request.getRemoteAddr();
+	}
+
+	private void configureSSL() {
+
+		SSLContextServerParameters serverParameters = new SSLContextServerParameters();
+		serverParameters.setClientAuthentication("REQUIRE");
+
+		KeyStoreParameters ksp = new KeyStoreParameters();
+		ksp.setResource("/Users/anilkumartalla/Documents/tmp/ssl-camel/server/keystore.jks");
+		ksp.setPassword("changeit");
+
+		KeyManagersParameters kmp = new KeyManagersParameters();
+		kmp.setKeyStore(ksp);
+		kmp.setKeyPassword("changeit");
+
+		CustomTrustManagersParameters trustManager = new CustomTrustManagersParameters();
+		trustManager.setKeyStore(ksp);
+
+		
+		SSLContextParameters scp = new SSLContextParameters();
+		scp.setKeyManagers(kmp);
+		scp.setServerParameters(serverParameters);
+		scp.setTrustManagers(trustManager);
+		scp.setSecureSocketProtocol("TLSv1.2");
+
+		JettyHttpComponent9 jettyComponent = context.getComponent("jetty", JettyHttpComponent9.class);
+		jettyComponent.setSslContextParameters(scp);
 	}
 
 }
